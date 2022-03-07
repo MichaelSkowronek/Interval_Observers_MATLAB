@@ -1,0 +1,230 @@
+% The illustrative example from "Interval Observers for Simultaneous 
+% State and Model Estimation of Partially Known Nonlinear Systems" chapter
+% V.
+% TODO: d is degenerating. Why is that?
+clear;
+K = 250;
+n = 2;
+p = 1;
+l = 3;
+n_w = 3;
+m = 1;
+delta_t = 0.01;  % Forward Euler step size.
+f = generate_f(@f_dot, delta_t);
+h = generate_h(@h_dot, delta_t);
+g = generate_g();
+u_k = 0;
+u = ones(K + 1, 1) * u_k;
+v_bar = [0.1;
+         0.1;
+         0.1];
+v_underline = - v_bar;
+w_bar = v_bar;
+w_underline = - v_bar;
+x_0_bar = [0;
+           0.6];
+x_0_underline = [-0.35;
+                 -0.1];
+% TODO: What did they use here? [-10, 10] at least holds with respect to 
+%       the example figures
+d_0_underline = - 10;
+d_0_bar = 10;
+x_0 = [0;
+       0.55];  % Some initial state within the bound similar to figures
+d_0 = 0.05;  % Some initial state within the bound similar to figures
+[~, ~, y] = simulate_system(f, h, g, n, p, l, n_w, x_0, d_0, u, ...
+                            w_underline, w_bar, v_underline, v_bar, K);
+num_grid_points_per_dim_f_domain = 3;
+num_grid_points_per_dim_g_domain = 3;
+num_grid_points_per_dim_h_domain = 3;
+num_interval_optimizations = 10;
+
+% TODO: Calculate the next part myself
+epsilon = 0.0001;
+A_f = [0.994, -0.01, 1 - epsilon;
+       0.009, 0.9965, - epsilon];  % Partial derivative lower bound
+B_f = [1.006, -0.0065, 1 + epsilon;
+       0.016, 1, epsilon];  % Partial derivative upper bound
+C_f = [0, 0, 0;
+       0, 0, 0];
+f_d = generate_f_d(f, A_f, B_f, C_f, n, p, m, n_w);
+
+% Just dummy values for testing.
+% TODO: Calculate real Lipschitz constants.
+L_f = 2;
+L_g = 2;
+L_h = 2;
+
+smio(f, f_d, g, y, u, x_0_underline, ...
+     x_0_bar, d_0_underline, d_0_bar, w_underline, w_bar, ...
+     v_underline, v_bar, L_f, L_g, L_h, ...
+     num_grid_points_per_dim_f_domain, ...
+     num_grid_points_per_dim_g_domain, ...
+     num_grid_points_per_dim_h_domain, K, num_interval_optimizations);
+
+
+function f_handle = generate_f(f_dot, delta_t)
+    function x_k_plus_one = f(xi_k)
+        x_k = xi_k(1:2);
+        x_dot_k = f_dot(xi_k);
+        x_k_plus_one = zeros(2, 1);
+        x_k_plus_one(1) = x_k(1) + delta_t * x_dot_k(1);
+        x_k_plus_one(2) = x_k(2) + delta_t * x_dot_k(2);
+    end
+    f_handle = @f;
+end
+
+
+function x_dot = f_dot(xi)
+x = xi(1:2);
+d = xi(3);
+u = xi(4);
+w = xi(5:7);
+x_dot = zeros(2, 1);
+x_dot(1) = - x(1) * x(2) - x(2) + u + d + w(1);
+x_dot(2) = x(1) * x(2) + x(1) + w(2);
+end
+
+
+function f_d_handle = generate_f_d(f, A_f, B_f, C_f, n, p, m, n_w)
+    function sol = f_d(xi_x, xi_y)
+        % (1) from "Interval Observers for Simultaneous State and Model 
+        % Estimation of Partially Known Nonlinear Systems"
+        %
+        % Args:
+        %   xi_x: Vector of size (n + p + m + n_w) which consists of x, d, 
+        %         u, w.
+        %   xi_y: Vector of size (n + p + m + n_w) which consists of x, d,
+        %         u, w.
+        % TODO:
+        %   Why are u and w not considered? We need to choose u and w to
+        %   evaluate f. As u is always the same for this example, just
+        %   choosing the u might be ok. w = 0 also might be ok.
+        x = xi_x(1:n + p);
+        y = xi_y(1:n + p);
+        u = xi_x(n + p + 1:n + p + m);
+        w = zeros(n_w, 1);
+        m_d = n;  % Note: m_d is named m within literature
+        n_d = n + p;  % Note: n_d is named n within literature
+        sol = zeros(m_d, 1);
+        for i = 1:m_d
+            z = zeros(n_d, 1);
+            for j = 1:n_d
+                a_i_j = A_f(i, j);
+                b_i_j = B_f(i, j);
+                if a_i_j >= 0 || ...
+                   (a_i_j <= 0 && b_i_j >= 0 && abs(a_i_j) <= abs(b_i_j))
+                    % Case 1 or 2 from "On sufficient conditions for mixed 
+                    % monotonicity", (11).
+                    z(j) = x(j);
+                else
+                    % Case 3 or 4 from "On sufficient conditions for mixed 
+                    % monotonicity", (11).
+                    z(j) = y(j);
+                end
+            end
+            f_value = f([z;
+                         u;
+                         w]);  % TODO: Split f() into f_1(), f_2(), ...
+            sol(i) = f_value(i) + C_f(i, :) * (x - y); 
+        end
+    end
+    f_d_handle = @f_d;
+end
+
+
+function h_handle = generate_h(h_dot, delta_t)
+    function d_k_plus_one = h(xi_k)
+        d_k = xi_k(3);
+        d_k_plus_one = d_k + delta_t * h_dot(xi_k);
+    end
+    h_handle = @h;
+end
+
+
+function d_dot = h_dot(xi)
+x = xi(1:2);
+w = xi(5:7);
+d_dot = 0.1 * (cos(x(1)) - sin(x(2))) + w(3);
+end
+
+
+function g_handle = generate_g()
+    function y = g(xi_g)
+        % g([x; d; u; v]) with xi_g = [x; d; u; v].
+        x = xi_g(1:2);
+        d = xi_g(3);
+        v = xi_g(5:7);
+        y = zeros(3, 1);
+        y(1) = x(1) + v(1);
+        y(2) = x(2) + v(2);
+        y(3) = sin(d) + v(3);
+    end
+    g_handle = @g;
+end
+
+
+function [x, d, y] = simulate_system(f, h, g, n, p, l, n_w, x_0, d_0, ...
+                                     u, w_underline, w_bar, ...
+                                     v_underline, v_bar, K)
+    % Simulates the system (f, h, g) for num_simulation_steps.
+    %
+    % Args:
+    %   u: A matrix of size (num_simulation_steps + 1 x m) of input 
+    %      vectors. The first entry is the input of step 0.
+    %   K: The number of simulation steps.
+    % Returns:
+    %   x: Size (num_simulation steps + 1 x n) starting with x_0.
+    %   d: Size (num_simulation steps + 1 x p) starting with d_0.
+    %   y: Size (num_simulation steps + 1 x l) starting with y_0.
+    w_samples = rand(K + 1, n_w);  % TODO: Consider other distributions
+    w = w_underline' + w_samples * (w_bar - w_underline);
+    v_samples = rand(K + 1, l);
+    v = v_underline' + v_samples * (v_bar - v_underline);
+    x = zeros(K + 1, n);
+    d = zeros(K + 1, p);
+    y = zeros(K + 1, l);
+    x(1, :) = x_0';
+    d(1, :) = d_0';
+    
+    u_0 = u(1, :)';
+    v_0 = v(1, :)';
+    xi_0_g = [x_0;
+              d_0;
+              u_0;
+              v_0];
+    y_0 = g(xi_0_g);
+    y(1, :) = y_0';
+    for k = 1:K
+        x_k_minus_one = x(k, :)';
+        d_k_minus_one = d(k, :)';
+        u_k_minus_one = u(k, :)';
+        w_k_minus_one = w(k, :)';
+        xi_k_minus_one = [x_k_minus_one;
+                          d_k_minus_one;
+                          u_k_minus_one;
+                          w_k_minus_one];
+        x_k = f(xi_k_minus_one);
+        d_k = h(xi_k_minus_one);
+        x(k + 1, :) = x_k';
+        d(k + 1, :) = d_k';
+        
+        u_k = u(k + 1, :)';
+        v_k = v(k + 1, :)';
+        xi_k_g = [x_k;
+                  d_k;
+                  u_k;
+                  v_k];
+        y_k = g(xi_k_g);
+        y(k + 1, :) = y_k';
+    end
+end
+
+
+
+
+
+
+
+
+
