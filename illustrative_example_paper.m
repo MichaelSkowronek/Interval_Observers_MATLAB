@@ -1,7 +1,7 @@
 % The illustrative example from "Interval Observers for Simultaneous 
 % State and Model Estimation of Partially Known Nonlinear Systems" chapter
 % V.
-% TODO: d is degenerating. Why is that?
+% TODO: Plot parallel affine abstraction matrices to check correctness.
 clear;
 K = 250;
 n = 2;
@@ -32,8 +32,6 @@ d_0_bar = 10;
 x_0 = [0;
        0.55];  % Some initial state within the bound similar to figures
 d_0 = 0.05;  % Some initial state within the bound similar to figures
-[~, ~, y] = simulate_system(f, h, g, n, p, l, n_w, x_0, d_0, u, ...
-                            w_underline, w_bar, v_underline, v_bar, K);
 num_grid_points_per_dim_f_domain = 3;
 num_grid_points_per_dim_g_domain = 3;
 num_grid_points_per_dim_h_domain = 3;
@@ -51,9 +49,21 @@ f_d = generate_f_d(f, A_f, B_f, C_f, n, p, m, n_w);
 
 % Just dummy values for testing.
 % TODO: Calculate real Lipschitz constants.
-L_f = 2;
-L_g = 2;
-L_h = 2;
+L_f = 5;
+L_g = 5;
+L_h = 5;
+
+% Simulation to get y
+delta_t_sim = 0.00001;
+sim_num_steps_factor = 1000;  % delta_t / delta_t_sim
+f_sim = generate_f(@f_dot, delta_t_sim);
+h_sim = generate_h(@h_dot, delta_t_sim);
+num_simulation_steps = K * sim_num_steps_factor;
+u_sim = ones(num_simulation_steps  + 1, 1) * u_k;
+[~, ~, y_sim] = simulate_system(f_sim, h_sim, g, n, p, l, n_w, x_0, ...
+                                d_0, u_sim, w_underline, w_bar, ...
+                                v_underline, v_bar, num_simulation_steps);
+y = y_sim(1:sim_num_steps_factor:end, :);
 
 smio(f, f_d, g, y, u, x_0_underline, ...
      x_0_bar, d_0_underline, d_0_bar, w_underline, w_bar, ...
@@ -166,7 +176,8 @@ end
 
 function [x, d, y] = simulate_system(f, h, g, n, p, l, n_w, x_0, d_0, ...
                                      u, w_underline, w_bar, ...
-                                     v_underline, v_bar, K)
+                                     v_underline, v_bar, ...
+                                     num_simulation_steps)
     % Simulates the system (f, h, g) for num_simulation_steps.
     %
     % Args:
@@ -177,13 +188,16 @@ function [x, d, y] = simulate_system(f, h, g, n, p, l, n_w, x_0, d_0, ...
     %   x: Size (num_simulation steps + 1 x n) starting with x_0.
     %   d: Size (num_simulation steps + 1 x p) starting with d_0.
     %   y: Size (num_simulation steps + 1 x l) starting with y_0.
-    w_samples = rand(K + 1, n_w);  % TODO: Consider other distributions
+    % TODO:
+    %   Consider other distributions
+    w_samples = rand(num_simulation_steps + 1, n_w);
     w = w_underline' + w_samples * (w_bar - w_underline);
-    v_samples = rand(K + 1, l);
-    v = v_underline' + v_samples * (v_bar - v_underline);
-    x = zeros(K + 1, n);
-    d = zeros(K + 1, p);
-    y = zeros(K + 1, l);
+    v = zeros(num_simulation_steps + 1, l);
+    %v_samples = rand(simulation_steps + 1, l);
+    %v = v_underline' + v_samples * (v_bar - v_underline);
+    x = zeros(num_simulation_steps + 1, n);
+    d = zeros(num_simulation_steps + 1, p);
+    y = zeros(num_simulation_steps + 1, l);
     x(1, :) = x_0';
     d(1, :) = d_0';
     
@@ -195,7 +209,7 @@ function [x, d, y] = simulate_system(f, h, g, n, p, l, n_w, x_0, d_0, ...
               v_0];
     y_0 = g(xi_0_g);
     y(1, :) = y_0';
-    for k = 1:K
+    for k = 1:num_simulation_steps
         x_k_minus_one = x(k, :)';
         d_k_minus_one = d(k, :)';
         u_k_minus_one = u(k, :)';
