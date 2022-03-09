@@ -31,9 +31,9 @@ d_0_bar = 10;
 x_0 = [0;
        0.55];  % Some initial state within the bound similar to figures
 d_0 = 0.05;  % Some initial state within the bound similar to figures
-num_grid_points_per_dim_f_domain = 4;
-num_grid_points_per_dim_g_domain = 4;
-num_grid_points_per_dim_h_domain = 4;
+num_grid_points_per_dim_f_domain = 3;
+num_grid_points_per_dim_g_domain = 3;
+num_grid_points_per_dim_h_domain = 3;
 num_interval_optimizations = 10;
 
 % TODO: Calculate the next part myself
