@@ -2,6 +2,8 @@
 % State and Model Estimation of Partially Known Nonlinear Systems" chapter
 % V.
 clear;
+init_paths;
+
 K = 250;
 n = 2;
 p = 1;
@@ -48,9 +50,9 @@ f_d = generate_f_d(f, A_f, B_f, C_f, n, p, m, n_w);
 
 % Just dummy values for testing.
 % TODO: Calculate real Lipschitz constants.
-L_f = 5;
-L_g = 5;
-L_h = 5;
+L_f = 1;
+L_g = 1;
+L_h = 1;
 
 % Simulation to get y
 delta_t_sim = 0.00001;
@@ -70,7 +72,7 @@ smio(f, f_d, g, y, u, x_0_underline, ...
      num_grid_points_per_dim_f_domain, ...
      num_grid_points_per_dim_g_domain, ...
      num_grid_points_per_dim_h_domain, K, num_interval_optimizations, ...
-     'plot_global_affine_abstraction_f', true, 'x_spacing', 0.001, ...
+     'plot_global_affine_abstraction_f', false, 'x_spacing', 0.001, ...
      'y_spacing', 0.001);
 
 
