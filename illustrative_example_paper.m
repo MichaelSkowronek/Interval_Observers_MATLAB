@@ -1,7 +1,6 @@
 % The illustrative example from "Interval Observers for Simultaneous 
 % State and Model Estimation of Partially Known Nonlinear Systems" chapter
 % V.
-% TODO: Plot parallel affine abstraction matrices to check correctness.
 clear;
 K = 250;
 n = 2;
@@ -32,9 +31,9 @@ d_0_bar = 10;
 x_0 = [0;
        0.55];  % Some initial state within the bound similar to figures
 d_0 = 0.05;  % Some initial state within the bound similar to figures
-num_grid_points_per_dim_f_domain = 3;
-num_grid_points_per_dim_g_domain = 3;
-num_grid_points_per_dim_h_domain = 3;
+num_grid_points_per_dim_f_domain = 4;
+num_grid_points_per_dim_g_domain = 4;
+num_grid_points_per_dim_h_domain = 4;
 num_interval_optimizations = 10;
 
 % TODO: Calculate the next part myself
@@ -70,7 +69,9 @@ smio(f, f_d, g, y, u, x_0_underline, ...
      v_underline, v_bar, L_f, L_g, L_h, ...
      num_grid_points_per_dim_f_domain, ...
      num_grid_points_per_dim_g_domain, ...
-     num_grid_points_per_dim_h_domain, K, num_interval_optimizations);
+     num_grid_points_per_dim_h_domain, K, num_interval_optimizations, ...
+     'plot_global_affine_abstraction_f', true, 'x_spacing', 0.001, ...
+     'y_spacing', 0.001);
 
 
 function f_handle = generate_f(f_dot, delta_t)
