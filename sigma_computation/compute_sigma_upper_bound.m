@@ -13,6 +13,11 @@ function [sigma_upper_bound] = compute_sigma_upper_bound(lambda, ...
     % 
     % Returns:
     %    sigma_upper_bound: The case (ii) upper bound of sigma.
+    % TODO:
+    %   - First approach was to randomly pick a simplex within the bound.
+    %     I think this makes no sense. They probably mean the simplex
+    %     should be a e.g. our rectangular domain. Then we would have a
+    %     proper upper bound for sigma.
     n_plus_m = size(xi_underline, 1);
     
     % Count number of intervals with zero width
