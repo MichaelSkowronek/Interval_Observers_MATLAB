@@ -191,12 +191,13 @@ function [] = ...
     h_k_minus_one_underline = h_0_underline;
     h_k_minus_one_bar = h_0_bar;
     % TODO: Is this the right way to calculate z_0_p_underline and
-    %       z_0_p_bar.
+    %       z_0_p_bar?
     z_k_minus_one_p_underline = [x_0_underline;
                                  d_0_underline];
     z_k_minus_one_p_bar = [x_0_bar;
                                  d_0_bar];
     for k = 1:K
+        % TODO: Should we calculate sigma anew for each iteration?
         [bb_A_k_f, bb_W_k_f, bb_B_k_f, e_k_tilde_f] = ...
             get_observer_gains_f(f, xi_k_minus_one_underline, ...
                                  xi_k_minus_one_bar, ...
