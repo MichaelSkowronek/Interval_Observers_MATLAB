@@ -83,9 +83,7 @@ function f_handle = generate_f(f_dot, delta_t)
     function x_k_plus_one = f(xi_k)
         x_k = xi_k(1:2);
         x_dot_k = f_dot(xi_k);
-        x_k_plus_one = zeros(2, 1);
-        x_k_plus_one(1) = x_k(1) + delta_t * x_dot_k(1);
-        x_k_plus_one(2) = x_k(2) + delta_t * x_dot_k(2);
+        x_k_plus_one = x_k + delta_t * x_dot_k;
     end
     f_handle = @f;
 end
