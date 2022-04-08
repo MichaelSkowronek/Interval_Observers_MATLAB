@@ -13,7 +13,7 @@ function [A_B, e_B_bar, e_B_underline] = ...
     %
     % Args:
     %   sigma_upper_bound: Instead of sigma we also can provide an upper 
-    %                      bound.
+    %                      bound. Size (m_prime, 1).
     %   m_prime: The output dimension of q_underline and q_bar.
     %   blackboard_bold_A: The global parallel affine abstraction matrix
     %                      A_B with B = X.
