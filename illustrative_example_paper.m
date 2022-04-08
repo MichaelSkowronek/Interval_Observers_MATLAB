@@ -50,8 +50,11 @@ f_d = generate_f_d(f, A_f, B_f, C_f, n, p, m, n_w);
 
 % Just dummy values for testing.
 % TODO: Calculate real Lipschitz constants.
-L_f = 1;
-L_g = 1;
+L_f = [1;
+       1];
+L_g = [1;
+       1;
+       1];
 L_h = 1;
 
 % Simulation to get y

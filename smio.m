@@ -10,16 +10,20 @@ function [] = ...
     % Estimation of Partially Known Nonlinear Systems".
     %
     % Args:
-    %   f_d: Mixed-monotone mapping of f. Assume f: R^n -> R^m, then
-    %        f_d: R^n x R^n -> R^m.
+    %   f: Function handle of a vector field f: R^{n + p + m + n_w} -> R^n.
+    %   f_d: Function handle of the decomposition function of f,
+    %        f_d: R^{n + p + m + n_w} x R^{n + p + m + n_w} -> R^n.
+    %   g: Function handle of a vector field g: R^{n + p + m + l} -> R^l.
     %   y: A matrix of size (K + 1 x l) of obervations.
     %      The first entry is the observation of step 0.
     %   u: A matrix of size (K + 1 x m) of input vectors.
     %      The first entry is the input of step 0.
-    %   L_f: The Lipschitz constant of f.
-    %   L_g: The Lipschitz constant of g.
-    %   L_h: A vector of size p of Lipschitz constants for each output
-    %        dimension of h.
+    %   L_f: Vector of Lipschitz constants for each codomain dimension of 
+    %        f with shape (n x 1).
+    %   L_g: Vector of Lipschitz constants for each codomain dimension of 
+    %        g with shape (l x 1).
+    %   L_h: Vector of Lipschitz constants for each codomain dimension of 
+    %        h with shape (p x 1).
     %   K: The number of observations and corresponding iterations k.
     %   num_interval_optimizations: The number of optimizations i of the 
     %                               interval within each observation 
