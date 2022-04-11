@@ -48,16 +48,34 @@ C_f = [0, 0, 0;
        0, 0, 0];
 f_d = generate_f_d(f, A_f, B_f, C_f, n, p, m, n_w);
 
-% Just dummy values for testing.
-% TODO: Calculate real Lipschitz constants.
-L_f = [1;
-       1];
-L_g = [1;
-       1;
-       1];
-L_h = 1;
+%% Calculate Lipschitz constants
+lambda_f_1 = calculate_lambda_f_1(delta_t, x_0_underline, x_0_bar);
+lambda_f_2 = calculate_lambda_f_2(delta_t, x_0_underline, x_0_bar);
+L_f = [lambda_f_1;
+       lambda_f_2];
+% grad_g_1 = [1; 0; 0; 0; 1; 0; 0], norm_grad_g_1 = sqrt(2)
+% grad_g_2 = [0; 1; 0; 0; 0; 1; 0], norm_grad_g_2 = sqrt(2)
+% grad_g_3 = [0; 0; cos(d); 0; 0; 0; 1], sq_norm_grad_g_3 = cos(d)^2 + 1
+% We drop the d-interval constraint and get max(norm_grad_g_3) = sqrt(2).
+L_g = [sqrt(2);
+       sqrt(2);
+       sqrt(2)];
+% Gradient of h: grad_h = [- delta_t * 1/10 * sin(x_1);
+%                          - delta_t * 1/10 * cos(x_2);
+%                          1;
+%                          0;
+%                          0;
+%                          0;
+%                          delta_t]
+% Squared norm of gradient of h:
+%   sq_grad_h = delta_t^2 * 1/100 * (sin(x_1)^2 + cos(x_2)^2) +
+%               delta_t^2 + 1
+% We drop the x-interval constraint and find the maximum at 
+% x = [Pi/2 + k_1 * Pi;
+%      k_2 * Pi] with k_1, k_2 some integer.
+L_h = sqrt(delta_t^2 * 1/100 * 2 + delta_t^2 + 1);
 
-% Simulation to get y
+%% Simulation to get y
 delta_t_sim = 0.00001;
 sim_num_steps_factor = 1000;  % delta_t / delta_t_sim
 f_sim = generate_f(@f_dot, delta_t_sim);
@@ -69,6 +87,7 @@ u_sim = ones(num_simulation_steps  + 1, 1) * u_k;
                                 v_underline, v_bar, num_simulation_steps);
 y = y_sim(1:sim_num_steps_factor:end, :);
 
+%%
 smio(f, f_d, g, y, u, x_0_underline, ...
      x_0_bar, d_0_underline, d_0_bar, w_underline, w_bar, ...
      v_underline, v_bar, L_f, L_g, L_h, ...
@@ -97,6 +116,42 @@ w = xi(5:7);
 x_dot = zeros(2, 1);
 x_dot(1) = - x(1) * x(2) - x(2) + u + d + w(1);
 x_dot(2) = x(1) * x(2) + x(1) + w(2);
+end
+
+
+function f_1_handle = generate_f_1(f_1_dot, delta_t)
+    function x_1_k_plus_one = f_1(xi_k)
+        x_1_k = xi_k(1);
+        x_1_dot_k = f_1_dot(xi_k);
+        x_1_k_plus_one = x_1_k + delta_t * x_1_dot_k;
+    end
+    f_1_handle = @f_1;
+end
+
+
+function x_1_dot = f_1_dot(xi)
+x = xi(1:2);
+d = xi(3);
+u = xi(4);
+w = xi(5:7);
+x_1_dot = - x(1) * x(2) - x(2) + u + d + w(1);
+end
+
+
+function f_2_handle = generate_f_2(f_2_dot, delta_t)
+    function x_2_k_plus_one = f_2(xi_k)
+        x_2_k = xi_k(2);
+        x_2_dot_k = f_2_dot(xi_k);
+        x_2_k_plus_one = x_2_k + delta_t * x_2_dot_k;
+    end
+    f_2_handle = @f_2;
+end
+
+
+function x_2_dot = f_2_dot(xi)
+x = xi(1:2);
+w = xi(5:7);
+x_2_dot = x(1) * x(2) + x(1) + w(2);
 end
 
 
@@ -239,10 +294,71 @@ function [x, d, y] = simulate_system(f, h, g, n, p, l, n_w, x_0, d_0, ...
 end
 
 
+function lambda_f_1 = calculate_lambda_f_1(delta_t, x_0_underline, x_0_bar)
+    % Calculate Lipschitz constant of f_1.
+    %
+    % Notation follows the MATLAB quadprog notation.
+    % Gradient of f_1: grad_f_1 = [1 - delta_t * x_2;
+    %                              - delta_t * (x_1 + 1);
+    %                              delta_t;
+    %                              delta_t;
+    %                              delta_t;
+    %                              0;
+    %                              0]
+    % Squared norm of gradient of f_1: 
+    %   sq_grad_f_1 = delta_t^2 * x_1^2 + 2 * delta_t^2 * x_1 + 
+    %                 delta_t^2 * x_2^2 - 2 * delta_t * x_2 +
+    %                 4 * delta_t^2 + 1
+    %
+    % Note:
+    %   - We need to negate H and f in order to maximize.
+    %   - We only use x_1 and x_2 because the objective is independent of
+    %     the remaining variables.
+    H = - [2 * delta_t^2, 0;
+           0            , 2 * delta_t^2];
+    f = - [2 * delta_t^2;
+           - 2 * delta_t];
+    lb = x_0_underline;
+    ub = x_0_bar;
+    x = quadprog(H, f, [], [], [], [], lb, ub);
+    x_1 = x(1);
+    x_2 = x(2);
+    lambda_f_1 = sqrt(delta_t^2 * x_1^2 + 2 * delta_t^2 * x_1 + ...
+                      delta_t^2 * x_2^2 - 2 * delta_t * x_2 + ...
+                      4 * delta_t^2 + 1);
+end
 
 
-
-
-
-
-
+function lambda_f_2 = calculate_lambda_f_2(delta_t, x_0_underline, x_0_bar)
+    % Calculate Lipschitz constant of f_2.
+    %
+    % Notation follows the MATLAB quadprog notation.
+    % Gradient of f_2: grad_f_2 = [delta_t * (x_2 + 1);
+    %                              1 + delta_t * x_1;
+    %                              0;
+    %                              0;
+    %                              0;
+    %                              delta_t;
+    %                              0]
+    % Squared norm of gradient of f_2: 
+    %   sq_grad_f_2 = delta_t^2 * x_1^2 + 2 * delta_t * x_1 +  
+    %                 delta_t^2 * x_2^2 + 2 * delta_t^2 * x_2 + 
+    %                 2 * delta_t^2
+    %
+    % Note:
+    %   - We need to negate H and f in order to maximize.
+    %   - We only use x_1 and x_2 because the objective is independent of
+    %     the remaining variables.
+    H = - [2 * delta_t^2, 0;
+           0            , 2 * delta_t^2];
+    f = - [2 * delta_t;
+           2 * delta_t^2];
+    lb = x_0_underline;
+    ub = x_0_bar;
+    x = quadprog(H, f, [], [], [], [], lb, ub);
+    x_1 = x(1);
+    x_2 = x(2);
+    lambda_f_2 = sqrt(delta_t^2 * x_1^2 + 2 * delta_t * x_1 + ...
+                      delta_t^2 * x_2^2 + 2 * delta_t^2 * x_2 + ...
+                      2 * delta_t^2);
+end
