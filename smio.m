@@ -33,6 +33,9 @@ function [] = ...
     %       plot_global_affine_abstraction_f: Default false, type boolean.
     %       plot_global_affine_abstraction_g: Default false, type boolean.
     %       plot_global_affine_abstraction_h: Default false, type boolean.
+    %       h: Function handle of a vector field 
+    %          h: R^{n + p + m + n_w} -> R^p. Not necessary for smio. If
+    %          provided, it will be plotted.
     %       x_spacing: Default 0.01. The spacing between plotting grid 
     %                  points on the x-axis.
     %       y_spacing: Default 0.01. The spacing between plotting grid 
@@ -48,6 +51,7 @@ function [] = ...
                  false, @islogical);
 	addParameter(input_parser, 'plot_global_affine_abstraction_g', ...
                  false, @islogical);
+    addParameter(input_parser, 'h', -1);
     addParameter(input_parser, 'x_spacing', 0.01);
     addParameter(input_parser, 'y_spacing', 0.01);
     parse(input_parser, varargin{:});
@@ -58,6 +62,7 @@ function [] = ...
         results.plot_global_affine_abstraction_h;
     plot_global_affine_abstraction_g = ...
         results.plot_global_affine_abstraction_g;
+    h = results.h;
     x_spacing = results.x_spacing;
     y_spacing = results.y_spacing;
     
@@ -124,7 +129,8 @@ function [] = ...
             num_grid_points_per_dim_h_domain, sigma_upper_bound_h, p);
         
     if plot_global_affine_abstraction_h
-        func_plot_global_affine_abstraction_h(h_0_underline, h_0_bar, ...
+        func_plot_global_affine_abstraction_h(h, h_0_underline, ...
+                                              h_0_bar, ...
                                               n, p, m, n_w, ...
                                               x_0_underline, ...
                                               x_0_bar, ...
@@ -479,9 +485,8 @@ function h_k_bar_handle = six_a(k, d_bar, L_h, xi_tilde, epsilon)
     % h_k_bar is generated for each dimension j in {1, ..., p}
     % simultaniously.
     %
-    % Note:
-    %   The paper does not include epsilon within the parenthesis as I do
-    %   here. But without it makes no sense.
+    % TODO:
+    %   See TODO os six_b().
     p = size(L_h, 1);
     function d_k_bar = h_k_bar(xi_k)
         d_k_bar = zeros(p, 1);
@@ -505,15 +510,21 @@ function h_k_underline_handle = six_b(k, d_underline, L_h, xi_tilde, ...
     % simultaniously.
     %
     % Note:
-    %   The paper does not include epsilon within the parenthesis as I do
-    %   here. But without it makes no sense.
+    %   - In contrast to (6b) I substract epsilon. This corresponds to
+    %     the original paper "Data-Driven Model Invalidation for Unknown 
+    %     Lipschitz Continuous Systems via Abstraction", theorem 1.
+    % TODO:
+    %   - Should the epsilon be within our outside the parenthesis? It is
+    %     not well defined in this paper.
+    %   - The The d_k_minus_t and xi_k_minus_t are not alignes equivalent
+    %     to the original paper.
     p = size(L_h, 1);
     function d_k_underline = h_k_underline(xi_k)
         d_k_underline = zeros(p, 1);
         for j = 1:p
             d_k_underline(j, 1) = max(d_underline(1:k + 1, j) + ...
                                   L_h(j) * ...
-                                  norm(xi_k' - xi_tilde(1:k + 1, :)) + ...
+                                  norm(xi_k' - xi_tilde(1:k + 1, :)) - ...
                                   epsilon(1:k + 1, j));
         end
     end
@@ -711,9 +722,6 @@ function [] = func_plot_global_affine_abstraction_f(f, n, p, m, n_w, ...
     f_abstraction_bar_coords = (bb_A_f * xi_coords' + e_bar_f)';
     f_1_abstraction_bar_coords = f_abstraction_bar_coords(:, 1);
     
-    plot3(x_1_coords, x_2_coords, f_1_coords, ...
-          x_1_coords, x_2_coords, f_1_abstraction_underline_coords, ...
-          x_1_coords, x_2_coords, f_1_abstraction_bar_coords);
 	figure
     plot3(x_1_coords, x_2_coords, f_1_coords, ...
           'DisplayName', 'f_1');
@@ -726,7 +734,7 @@ function [] = func_plot_global_affine_abstraction_f(f, n, p, m, n_w, ...
     title('Global Parallel Affine Abstraction of f');
     xlabel('x_1');
     ylabel('x_2');
-    zlabel('d_1');
+    zlabel('f_1');
     legend;
 end
 
@@ -797,12 +805,12 @@ function [] = func_plot_global_affine_abstraction_g(g, n, p, m, l, ...
     title('Global Parallel Affine Abstraction of g');
     xlabel('x_1');
     ylabel('x_2');
-    zlabel('d_1');
+    zlabel('g_1');
     legend;
 end
 
 
-function [] = func_plot_global_affine_abstraction_h(h_underline, ...
+function [] = func_plot_global_affine_abstraction_h(h, h_underline, ...
                                                     h_bar, ...
                                                     n, p, m, n_w, ...
                                                     x_0_underline, ...
@@ -844,6 +852,14 @@ function [] = func_plot_global_affine_abstraction_h(h_underline, ...
                  d_coords, u_coords, w_coords];
     xi_coords_cell = num2cell(xi_coords', 1);
     
+    if(isa(h, 'function_handle'))
+        h_of_xi_coords = cellfun(h, xi_coords_cell, ...
+                                 'UniformOutput', false);
+        h_of_xi_coords = cell2mat(h_of_xi_coords);
+        h_of_xi_coords = h_of_xi_coords';
+        h_1_coords = h_of_xi_coords(:, 1);
+    end
+    
     h_underline_of_xi_coords = cellfun(h_underline, xi_coords_cell, ...
                              'UniformOutput', false);
     h_underline_of_xi_coords = cell2mat(h_underline_of_xi_coords);
@@ -868,6 +884,10 @@ function [] = func_plot_global_affine_abstraction_h(h_underline, ...
     plot3(x_1_coords, x_2_coords, h_underline_1_coords, ...
           'DisplayName', 'h_{underline, 1}');
 	hold on
+    if(isa(h, 'function_handle'))
+        plot3(x_1_coords, x_2_coords, h_1_coords, ...
+              'DisplayName', 'h_{1}');
+    end
     plot3(x_1_coords, x_2_coords, h_bar_1_coords, ...
           'DisplayName', 'h_{bar, 1}');
 	plot3(x_1_coords, x_2_coords, h_1_abstraction_underline_coords, ...
