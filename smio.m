@@ -613,9 +613,6 @@ function [r] = rowsupp(matrix)
     % rowsupp() from (II. Preliminaries) in "Interval Observers for 
     % Simultaneous State and Model  Estimation of Partially Known 
     % Nonlinear Systems".
-    %
-    % TODO:
-    %   - Test this function.
     sz = size(matrix);
     p = sz(1);
     q = sz(2);
