@@ -26,10 +26,10 @@ x_0_bar = [0;
            0.6];
 x_0_underline = [-0.35;
                  -0.1];
-% TODO: What did they use here? [-10, 10] at least holds with respect to 
+% TODO: What did they use here? [-0.2, 0.5] at least holds with respect to 
 %       the example figures
-d_0_underline = - 10;
-d_0_bar = 10;
+d_0_underline = - 0.2;
+d_0_bar = 0.5;
 x_0 = [0;
        0.55];  % Some initial state within the bound similar to figures
 d_0 = 0.05;  % Some initial state within the bound similar to figures
@@ -76,7 +76,7 @@ L_g = [sqrt(2);
 L_h = sqrt(delta_t^2 * 1/100 * 2 + delta_t^2 + 1);
 
 %% Simulation to get y
-delta_t_sim = 0.00001;
+delta_t_sim = delta_t;
 sim_num_steps_factor = 1000;  % delta_t / delta_t_sim
 f_sim = generate_f(@f_dot, delta_t_sim);
 h_sim = generate_h(@h_dot, delta_t_sim);
@@ -94,7 +94,7 @@ smio(f, f_d, g, y, u, x_0_underline, ...
      num_grid_points_per_dim_f_domain, ...
      num_grid_points_per_dim_g_domain, ...
      num_grid_points_per_dim_h_domain, K, num_interval_optimizations, ...
-     'plot_global_affine_abstraction_h', true, 'h', h, ...
+     'plot_global_affine_abstraction_g', true, 'h', h, ...
      'x_spacing', 0.001, 'y_spacing', 0.001);
 
 
