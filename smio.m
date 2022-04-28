@@ -500,8 +500,6 @@ function h_k_bar_handle = six_a(k, d_bar, L_h, xi_tilde, epsilon)
     %   - In contrast to (6a) we align the data, s.t. 
     %     d_bar_k_minus_t is paired with xi_tilde_k_minus_t_minus_1
     %     and epsilon_k_minus_t_minus_1.
-    % TODO:
-    %   See TODO of six_b().
     p = size(L_h, 1);
     function d_k_bar = h_k_bar(xi_k)
         d_k_bar = zeros(p, 1);
@@ -534,9 +532,6 @@ function h_k_underline_handle = six_b(k, d_underline, L_h, xi_tilde, ...
     %   - In contrast to (6b) we substract epsilon. This corresponds to
     %     the original paper "Data-Driven Model Invalidation for Unknown 
     %     Lipschitz Continuous Systems via Abstraction", theorem 1.
-    % TODO:
-    %   - The d_k_minus_t and xi_k_minus_t are not aligned equivalent
-    %     to the original paper.
     p = size(L_h, 1);
     function d_k_underline = h_k_underline(xi_k)
         d_k_underline = zeros(p, 1);
