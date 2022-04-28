@@ -117,9 +117,8 @@ function [] = ...
     end
 
     %% Global Parallel Affine Abstraction for h
-    k = 0;
-    h_0_bar = six_a(k, d_bar, L_h, xi_tilde, epsilon);
-    h_0_underline = six_b(k, d_underline, L_h, xi_tilde, epsilon);
+    h_0_bar = @(xi) d_0_bar;
+    h_0_underline = @(xi) d_0_underline;
     sigma_upper_bound_h = compute_sigma_upper_bound(L_h, ...
                                                     xi_0_underline, ...
                                                     xi_0_bar);
@@ -487,9 +486,12 @@ function h_k_bar_handle = six_a(k, d_bar, L_h, xi_tilde, epsilon)
     % simultaniously.
     %
     % Note:
-    %   - In contrast to (6b) I include epsilon within the maximum. This
+    %   - In contrast to (6a) I include epsilon within the maximum. This
     %     is solves an issue with the indices there and is intuitively
     %     right.
+    %   - In contrast to (6a) we align the data, s.t. 
+    %     d_bar_k_minus_t is paired with xi_tilde_k_minus_t_minus_1
+    %     and epsilon_k_minus_t_minus_1.
     % TODO:
     %   See TODO of six_b().
     p = size(L_h, 1);
@@ -497,9 +499,9 @@ function h_k_bar_handle = six_a(k, d_bar, L_h, xi_tilde, epsilon)
         d_k_bar = zeros(p, 1);
         for j = 1:p
             d_k_bar(j, 1) = ...
-                min(d_bar(1:k + 1, j) + L_h(j) * ...
-                    vecnorm(xi_k' - xi_tilde(1:k + 1, :), 2, 2) + ...
-                    epsilon(1:k + 1, j));
+                min(d_bar(2:k + 1, j) + L_h(j) * ...
+                    vecnorm(xi_k' - xi_tilde(1:k, :), 2, 2) + ...
+                    epsilon(1:k, j));
         end
     end
     h_k_bar_handle = @h_k_bar;
@@ -515,10 +517,13 @@ function h_k_underline_handle = six_b(k, d_underline, L_h, xi_tilde, ...
     % simultaniously.
     %
     % Note:
-    %   - In contrast to (6b) I include epsilon within the maximum. This
+    %   - In contrast to (6b) we include epsilon within the maximum. This
     %     is solves an issue with the indices there and is intuitively
     %     right.
-    %   - In contrast to (6b) I substract epsilon. This corresponds to
+    %   - In contrast to (6b) we align the data, s.t. 
+    %     d_underline_k_minus_t is paired with xi_tilde_k_minus_t_minus_1
+    %     and epsilon_k_minus_t_minus_1.
+    %   - In contrast to (6b) we substract epsilon. This corresponds to
     %     the original paper "Data-Driven Model Invalidation for Unknown 
     %     Lipschitz Continuous Systems via Abstraction", theorem 1.
     % TODO:
@@ -529,9 +534,9 @@ function h_k_underline_handle = six_b(k, d_underline, L_h, xi_tilde, ...
         d_k_underline = zeros(p, 1);
         for j = 1:p
             d_k_underline(j, 1) = ...
-                max(d_underline(1:k + 1, j) + L_h(j) * ...
-                    vecnorm(xi_k' - xi_tilde(1:k + 1, :), 2, 2) - ...
-                    epsilon(1:k + 1, j));
+                max(d_underline(2:k + 1, j) + L_h(j) * ...
+                    vecnorm(xi_k' - xi_tilde(1:k, :), 2, 2) - ...
+                    epsilon(1:k, j));
         end
     end
     h_k_underline_handle = @h_k_underline;
