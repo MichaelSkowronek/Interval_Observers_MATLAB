@@ -146,8 +146,6 @@ function [] = ...
     end
         
     %% Global Parallel Affine Abstraction for g
-    % TODO: Doing this here is not wrong, but is there a better way?
-    %       We maybe could do it within each iteration.
     xi_0_underline_g = [z_0_underline;
                         u(1, :)';
                         v_underline];
