@@ -196,12 +196,10 @@ function [] = ...
                           w_bar];
     h_k_minus_one_underline = h_0_underline;
     h_k_minus_one_bar = h_0_bar;
-    % TODO: Is this the right way to calculate z_0_p_underline and
-    %       z_0_p_bar?
     z_k_minus_one_p_underline = [x_0_underline;
                                  d_0_underline];
     z_k_minus_one_p_bar = [x_0_bar;
-                                 d_0_bar];
+                           d_0_bar];
     for k = 1:K
         % TODO: Should we calculate sigma anew for each iteration?
         [bb_A_k_f, bb_W_k_f, bb_B_k_f, e_k_tilde_f] = ...
@@ -448,6 +446,9 @@ function [d_k_p_underline, d_k_p_bar] = ...
            u_k_minus_one, w_underline, w_bar, p)
     % (4b) from "Interval Observers for Simultaneous State and Model 
     % Estimation of Partially Known Nonlinear Systems".
+    %
+    % TODO:
+    %   Why do we use z_k_minus_1_p instead of z_k_minus_1 here?
     solution = ...
         bb_A_k_h * [z_k_minus_one_p_bar; z_k_minus_one_p_underline] + ...
         bb_B_k_h * u_k_minus_one + ...
@@ -552,6 +553,9 @@ function [x_k_a_p_underline, x_k_a_p_bar] = ...
           u_k_minus_one, w_underline, w_bar, n)
     % (7) from "Interval Observers for Simultaneous State and Model 
     % Estimation of Partially Known Nonlinear Systems".
+    %
+    % TODO:
+    %   Why do we use z_k_minus_1_p instead of z_k_minus_1 here?
     solution = ...
         bb_A_k_f * [z_k_minus_one_p_bar; z_k_minus_one_p_underline] + ...
         bb_B_k_f * u_k_minus_one + ...
