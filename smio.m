@@ -1,4 +1,4 @@
-function [] = ...
+function [z_k_underline_trajectory, z_k_bar_trajectory] = ...
     smio(f, f_d, g, y, u, x_0_underline, ...
          x_0_bar, d_0_underline, d_0_bar, w_underline, w_bar, ...
          v_underline, v_bar, L_f, L_g, L_h, ...
@@ -41,6 +41,12 @@ function [] = ...
     %       y_spacing: Default 0.01. The spacing between plotting grid 
     %                  points on the y-axis.
     %
+    % Returns:
+    %   - z_k_underline_trajectory: The calculate trajectory of lower 
+    %                               bounds of z. Array of size 
+    %                               (K + 1 x n + p).
+    %   - z_k_bar_trajectory: The calculate trajectory of upper bounds of
+    %                         z. Array of size (K + 1 x n + p).
     % Note: The bb in variable names is an abbreviation for blackboard 
     %       bold.
     %% Parse Inputs
@@ -55,7 +61,7 @@ function [] = ...
     addParameter(input_parser, 'x_spacing', 0.01);
     addParameter(input_parser, 'y_spacing', 0.01);
     addParameter(input_parser, 'verbose', false, @islogical);
-    addParameter(input_parser, 'log', @fprintf);
+    addParameter(input_parser, 'log', @disp);
     parse(input_parser, varargin{:});
     results = input_parser.Results;
     plot_global_affine_abstraction_f = ...
@@ -92,6 +98,8 @@ function [] = ...
     xi_tilde(1, :) = (1/2) * (xi_0_bar + xi_0_underline);
     epsilon = zeros(K + 1, p);  % epsilon storage
     epsilon(1, :) = 2 * L_h * norm(xi_0_bar - xi_0_underline);
+    z_k_underline_trajectory = zeros(K + 1, n + p);
+    z_k_bar_trajectory = zeros(K + 1, n + p);
     
     %% Global Parallel Affine Abstraction for f
     % TODO: Abstraction matricies do not fit the given ones in the paper
@@ -181,6 +189,15 @@ function [] = ...
     end
 
     %% Main Loop
+    z_k_underline_trajectory(1, :) = [x_0_underline;
+                                      d_0_underline]';
+    z_k_bar_trajectory(1, :) = [x_0_bar;
+                                d_0_bar]';
+    if verbose
+        log("[z_k_underline, z_k_bar]:");
+        log([z_k_underline_trajectory(1, :)', z_k_bar_trajectory(1, :)']);
+    end
+                                
     x_k_minus_one_underline = x_0_underline;
     x_k_minus_one_bar = x_0_bar;
     d_k_minus_one_underline = d_0_underline;
@@ -206,7 +223,7 @@ function [] = ...
                            d_0_bar];
     for k = 1:K
         if verbose
-            log(sprintf("k: %u\n", k));
+            log(sprintf("k: %u", k));
         end
         [bb_A_k_f, bb_W_k_f, bb_B_k_f, e_k_tilde_f] = ...
             get_observer_gains_f(f, xi_k_minus_one_underline, ...
@@ -290,6 +307,15 @@ function [] = ...
         h_k_bar = six_a(k, d_bar, L_h, xi_tilde, epsilon);
         h_k_underline = six_b(k, d_underline, L_h, xi_tilde, ...
                                       epsilon);
+        z_k_underline_trajectory(k + 1, :) = [x_k_underline;
+                                              d_k_underline]';
+        z_k_bar_trajectory(k + 1, :) = [x_k_bar;
+                                        d_k_bar]';
+        if verbose
+            log("[z_k_underline, z_k_bar]:");
+            log([z_k_underline_trajectory(1, :)', ...
+                 z_k_bar_trajectory(1, :)']);
+        end
         
         % Prepare variables for next iteration.
         x_k_minus_one_underline = x_k_underline;
