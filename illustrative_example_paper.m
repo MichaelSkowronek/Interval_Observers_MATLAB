@@ -77,7 +77,7 @@ L_h = sqrt(delta_t^2 * 1/100 * 2 + delta_t^2 + 1);
 
 %% Simulation to get y
 delta_t_sim = delta_t;
-sim_num_steps_factor = 1000;  % delta_t / delta_t_sim
+sim_num_steps_factor = delta_t / delta_t_sim;
 f_sim = generate_f(@f_dot, delta_t_sim);
 h_sim = generate_h(@h_dot, delta_t_sim);
 num_simulation_steps = K * sim_num_steps_factor;
