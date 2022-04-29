@@ -33,10 +33,10 @@ d_0_bar = 0.5;
 x_0 = [0;
        0.55];  % Some initial state within the bound similar to figures
 d_0 = 0.05;  % Some initial state within the bound similar to figures
-num_grid_points_per_dim_f_domain = 3;
-num_grid_points_per_dim_g_domain = 3;
-num_grid_points_per_dim_h_domain = 3;
-num_interval_optimizations = 10;
+num_grid_points_per_dim_f_domain = 2;
+num_grid_points_per_dim_g_domain = 2;
+num_grid_points_per_dim_h_domain = 2;
+num_interval_optimizations = 2;
 
 % TODO: Calculate the next part myself
 epsilon = 0.0001;
@@ -94,8 +94,8 @@ smio(f, f_d, g, y, u, x_0_underline, ...
      num_grid_points_per_dim_f_domain, ...
      num_grid_points_per_dim_g_domain, ...
      num_grid_points_per_dim_h_domain, K, num_interval_optimizations, ...
-     'plot_global_affine_abstraction_g', true, 'h', h, ...
-     'x_spacing', 0.001, 'y_spacing', 0.001);
+     'plot_global_affine_abstraction_h', false, 'h', h, ...
+     'x_spacing', 0.001, 'y_spacing', 0.001, 'verbose', true);
 
 
 function f_handle = generate_f(f_dot, delta_t)

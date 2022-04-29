@@ -54,6 +54,8 @@ function [] = ...
     addParameter(input_parser, 'h', -1);
     addParameter(input_parser, 'x_spacing', 0.01);
     addParameter(input_parser, 'y_spacing', 0.01);
+    addParameter(input_parser, 'verbose', false, @islogical);
+    addParameter(input_parser, 'log', @fprintf);
     parse(input_parser, varargin{:});
     results = input_parser.Results;
     plot_global_affine_abstraction_f = ...
@@ -65,6 +67,8 @@ function [] = ...
     h = results.h;
     x_spacing = results.x_spacing;
     y_spacing = results.y_spacing;
+    verbose = results.verbose;
+    log = results.log;
     
     %% Initialization
     n = size(x_0_underline, 1);
@@ -146,7 +150,6 @@ function [] = ...
     end
         
     %% Global Parallel Affine Abstraction for g
-    % TODO: Check if g is right
     xi_0_underline_g = [z_0_underline;
                         u(1, :)';
                         v_underline];
@@ -202,6 +205,9 @@ function [] = ...
     z_k_minus_one_p_bar = [x_0_bar;
                            d_0_bar];
     for k = 1:K
+        if verbose
+            log(sprintf("k: %u\n", k));
+        end
         [bb_A_k_f, bb_W_k_f, bb_B_k_f, e_k_tilde_f] = ...
             get_observer_gains_f(f, xi_k_minus_one_underline, ...
                                  xi_k_minus_one_bar, ...
@@ -230,6 +236,11 @@ function [] = ...
                    u_k_minus_one, w_underline, w_bar, p);
         [z_k_p_underline, z_k_p_bar] = ...
             four_c(x_k_p_underline, x_k_p_bar, d_k_p_underline, d_k_p_bar);
+        
+        % Note: The following two lines are not part of the paper.
+        z_k_p_underline = max([z_k_p_underline, z_0_underline], [], 2);
+        z_k_p_bar = min([z_k_p_bar, z_0_bar], [], 2);
+        
         [z_0_k_u_underline, z_0_k_u_bar] = eight(z_k_p_underline, ...
                                                   z_k_p_bar);
         z_i_minus_one_k_u_underline = z_0_k_u_underline;
@@ -255,8 +266,7 @@ function [] = ...
                        z_i_minus_one_k_u_underline, ...
                        z_i_minus_one_k_u_bar, A_i_k_g);
             A_i_k_g_pinv = pinv(A_i_k_g);
-            omega_i_k = calculate_omega(kappa, A_i_k_g, A_i_k_g_pinv, ...
-                                        n, p);
+            omega_i_k = calculate_omega(A_i_k_g, A_i_k_g_pinv, n, p);
             [z_i_k_u_underline, z_i_k_u_bar] = ...
                 nine(A_i_k_g_pinv, alpha_i_k_underline, alpha_i_k_bar, ...
                 omega_i_k, z_i_minus_one_k_u_underline, ...
@@ -501,7 +511,10 @@ function h_k_bar_handle = six_a(k, d_bar, L_h, xi_tilde, epsilon)
     %   - In contrast to (6a) we align the data, s.t. 
     %     d_bar_k_minus_t is paired with xi_tilde_k_minus_t_minus_1
     %     and epsilon_k_minus_t_minus_1.
+    %   - In contrast to (6a) we include the initial upper bound of the
+    %     unknown dynamic d within the minimum.
     p = size(L_h, 1);
+    d_0_bar = d_bar(1, :)';
     function d_k_bar = h_k_bar(xi_k)
         d_k_bar = zeros(p, 1);
         for j = 1:p
@@ -509,6 +522,8 @@ function h_k_bar_handle = six_a(k, d_bar, L_h, xi_tilde, epsilon)
                 min(d_bar(2:k + 1, j) + L_h(j) * ...
                     vecnorm(xi_k' - xi_tilde(1:k, :), 2, 2) + ...
                     epsilon(1:k, j));
+            % Note: The following line is not part of the paper.
+            d_k_bar(j, 1) = min([d_k_bar(j, 1), d_0_bar(j)]);
         end
     end
     h_k_bar_handle = @h_k_bar;
@@ -530,10 +545,13 @@ function h_k_underline_handle = six_b(k, d_underline, L_h, xi_tilde, ...
     %   - In contrast to (6b) we align the data, s.t. 
     %     d_underline_k_minus_t is paired with xi_tilde_k_minus_t_minus_1
     %     and epsilon_k_minus_t_minus_1.
+    %   - In contrast to (6a) we include the initial lower bound of the
+    %     unknown dynamic d within the maximum.
     %   - In contrast to (6b) we substract epsilon. This corresponds to
     %     the original paper "Data-Driven Model Invalidation for Unknown 
     %     Lipschitz Continuous Systems via Abstraction", theorem 1.
     p = size(L_h, 1);
+    d_0_underline = d_underline(1, :)';
     function d_k_underline = h_k_underline(xi_k)
         d_k_underline = zeros(p, 1);
         for j = 1:p
@@ -541,6 +559,9 @@ function h_k_underline_handle = six_b(k, d_underline, L_h, xi_tilde, ...
                 max(d_underline(2:k + 1, j) + L_h(j) * ...
                     vecnorm(xi_k' - xi_tilde(1:k, :), 2, 2) - ...
                     epsilon(1:k, j));
+            % Note: The following line is not part of the paper.
+            d_k_underline(j, 1) = max([d_k_underline(j, 1), ...
+                                       d_0_underline(j)]);
         end
     end
     h_k_underline_handle = @h_k_underline;
