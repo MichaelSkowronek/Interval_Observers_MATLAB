@@ -3,7 +3,7 @@ MATLAB implementation of "Interval Observers for Simultaneous State and Model Es
 
 Note that I'm not the author of this paper.
 
-## NOT WORKING YET
+### IMPORTANT: This library is not working yet.
 
 ## Requirements
 - MATLAB R2021a
